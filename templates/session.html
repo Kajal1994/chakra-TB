@@ -71,14 +71,13 @@
 
     // Mood data and mapping
     const moods = [
-        { name: 'Calm', chakra: 'Root', desired: 'centered and peaceful' },
+        { name: 'Calm', chakra: 'Heart', desired: 'peaceful and loving' },
         { name: 'Anxious', chakra: 'Root', desired: 'grounded and secure' },
         { name: 'Tired', chakra: 'Solar Plexus', desired: 'energized and confident' },
         { name: 'Distracted', chakra: 'Third Eye', desired: 'focused and clear' },
         { name: 'Unmotivated', chakra: 'Sacral', desired: 'creative and inspired' },
         { name: 'Stressed', chakra: 'Throat', desired: 'calm and expressive' },
         { name: 'Energetic', chakra: 'Crown', desired: 'spiritually connected' },
-        { name: 'Focused', chakra: 'Third Eye', desired: 'insightful and attentive' },
         { name: 'Choose Chakra Manually', chakra: null, desired: null, manual: true }
     ];
     let selectedMood = null;
@@ -468,7 +467,7 @@
         let gestureHoldStart = null;
         let gestureConfirmed = false;
         let lastFeedback = '';
-        let animationFrameId = null;
+        let firstFrameReceived = false;
         // Helper: show feedback only if changed
         function setFeedback(msg) {
             if (msg !== lastFeedback) {
@@ -476,6 +475,7 @@
                 lastFeedback = msg;
             }
         }
+        setFeedback('Loading camera…');
         // Camera setup with error handling
         try {
             if (!window.Hands || !window.Camera) {
@@ -507,6 +507,10 @@
         });
         hands.onResults((results) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!firstFrameReceived) {
+                setFeedback('Waiting for your gesture…');
+                firstFrameReceived = true;
+            }
             if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
                 handDetected = false;
                 correctGesture = false;
@@ -520,8 +524,8 @@
                 drawConnectors(ctx, landmarks, window.HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.25)', lineWidth: 2 });
                 drawLandmarks(ctx, landmarks, { color: 'rgba(0,255,180,0.7)', lineWidth: 1, radius: 2 });
             });
-            // Gesture detection
-            const gestureOk = detectChakraGesture(results, chakras[selectedChakra].name);
+            // Gesture detection (robust)
+            const gestureOk = detectChakraGestureRobust(results, chakras[selectedChakra].name);
             if (gestureOk) {
                 if (!gestureHoldStart) gestureHoldStart = Date.now();
                 if (Date.now() - gestureHoldStart > 1000) {
@@ -537,7 +541,7 @@
                 setFeedback(`Incorrect gesture. Adjust your fingers to match the <b>${chakras[selectedChakra].name} Chakra</b> mudra.`);
             }
         });
-        // Camera loop
+        // Camera loop (non-blocking)
         camera = new window.Camera(video, {
             onFrame: async () => {
                 if (hands) {
@@ -550,65 +554,95 @@
         camera.start();
     }
 
-    // --- Clean, robust gesture detection for each chakra ---
-    function detectChakraGesture(results, chakraName) {
-        // For two-hand gestures
+    // --- Robust gesture detection for all chakras ---
+    function detectChakraGestureRobust(results, chakraName) {
+        // Helper: normalized distance between two points
+        function normDist(a, b, ref) {
+            return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2) / ref;
+        }
+        // Helper: finger curl (returns true if finger is straight)
+        function isFingerStraight(lm, tip, pip, mcp, tol=0.32) {
+            // If tip is farther from wrist than pip and mcp, finger is straight
+            const d_tip_wrist = normDist(lm[tip], lm[0], 1);
+            const d_pip_wrist = normDist(lm[pip], lm[0], 1);
+            const d_mcp_wrist = normDist(lm[mcp], lm[0], 1);
+            return (d_tip_wrist > d_pip_wrist - tol) && (d_pip_wrist > d_mcp_wrist - tol);
+        }
+        // Helper: hand size (palm width)
+        function handRef(landmarks) {
+            return Math.sqrt((landmarks[0].x-landmarks[5].x)**2 + (landmarks[0].y-landmarks[5].y)**2);
+        }
+        // Helper: fuzzy match (returns true if at least N% of conditions are true)
+        function fuzzyMatch(conditions, minPass=0.8) {
+            const pass = conditions.filter(Boolean).length;
+            return pass / conditions.length >= minPass;
+        }
+        // Tolerance for distances
+        const DIST_TOL = 0.30; // 30% of palm width
+        // Two-hand gestures
         if (chakraName.toLowerCase() === 'heart' || chakraName.toLowerCase() === 'third eye') {
             if (!results.multiHandLandmarks || results.multiHandLandmarks.length < 2) return false;
             const hand1 = results.multiHandLandmarks[0];
             const hand2 = results.multiHandLandmarks[1];
-            function dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
-            const handSize = (getHandSize(hand1) + getHandSize(hand2)) / 2;
+            const ref1 = handRef(hand1);
+            const ref2 = handRef(hand2);
             if (chakraName.toLowerCase() === 'heart') {
-                // Heart Chakra (Anjali Mudra): Palms and all fingertips pressed together
-                // Reference: heartchakra.jpg
+                // Heart: all fingertips and palms close
                 const tips = [4,8,12,16,20];
-                // All fingertips close between hands, and palms close
-                const palmsClose = dist(hand1[0], hand2[0]) < handSize * 0.25;
-                const allTipsClose = tips.every(i => dist(hand1[i], hand2[i]) < handSize * 0.18);
-                return palmsClose && allTipsClose;
+                const palmsClose = normDist(hand1[0], hand2[0], (ref1+ref2)/2) < 1.3;
+                const tipsClose = tips.map(i => normDist(hand1[i], hand2[i], (ref1+ref2)/2) < 1.2);
+                return fuzzyMatch([palmsClose, ...tipsClose], 0.8);
             } else if (chakraName.toLowerCase() === 'third eye') {
-                // Third Eye Chakra (Hakini Mudra): Fingertips of both hands touch, dome shape
-                // Reference: thirdeyechakra.jpg
-                // Index, middle, ring, pinky, and thumb tips close
+                // Third Eye: all fingertips close
                 const tips = [4,8,12,16,20];
-                return tips.every(i => dist(hand1[i], hand2[i]) < handSize * 0.20);
+                const tipsClose = tips.map(i => normDist(hand1[i], hand2[i], (ref1+ref2)/2) < 1.2);
+                return fuzzyMatch(tipsClose, 0.8);
             }
         } else {
-            // Single hand gestures
             if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return false;
             const l = results.multiHandLandmarks[0];
-            function dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
-            const handSize = getHandSize(l);
+            const ref = handRef(l);
             switch(chakraName.toLowerCase()) {
-                case 'root':
-                    // Root Chakra (Prithvi Mudra): Tip of ring finger touches tip of thumb, other fingers extended
-                    // Reference: rootchakra-gif.gif
-                    const ringThumb = dist(l[16], l[4]) < handSize * 0.18;
-                    const indexExtended = l[8].y < l[6].y;
-                    const middleExtended = l[12].y < l[10].y;
-                    const pinkyExtended = l[20].y < l[18].y;
-                    return ringThumb && indexExtended && middleExtended && pinkyExtended;
-                case 'sacral':
-                    // Sacral Chakra (Varun Mudra): Tip of little finger touches tip of thumb, other fingers extended
-                    // Reference: sacralchakra-gif.gif
-                    const pinkyThumb = dist(l[20], l[4]) < handSize * 0.18;
-                    return pinkyThumb && l[8].y < l[6].y && l[12].y < l[10].y && l[16].y < l[14].y;
-                case 'solar plexus':
-                    // Solar Plexus Chakra (Surya Mudra): Tip of ring finger touches base of thumb, other fingers extended
-                    // Reference: solarplexus-gif.gif
-                    const ringThumbBase = dist(l[16], l[2]) < handSize * 0.18;
-                    return ringThumbBase && l[8].y < l[6].y && l[12].y < l[10].y && l[20].y < l[18].y;
-                case 'throat':
-                    // Throat Chakra (Akash Mudra): Tip of middle finger touches tip of thumb, other fingers extended
-                    // Reference: throatchakra-gif.gif
-                    const middleThumb = dist(l[12], l[4]) < handSize * 0.18;
-                    return middleThumb && l[8].y < l[6].y && l[16].y < l[14].y && l[20].y < l[18].y;
-                case 'crown':
-                    // Crown Chakra (Gyan Mudra): Tip of index finger touches tip of thumb, other fingers extended
-                    // Reference: crown-gif.gif
-                    const indexThumb = dist(l[8], l[4]) < handSize * 0.18;
-                    return indexThumb && l[12].y < l[10].y && l[16].y < l[14].y && l[20].y < l[18].y;
+                case 'root': {
+                    // Ring tip to thumb tip, other fingers straight
+                    const ringThumb = normDist(l[16], l[4], ref) < DIST_TOL;
+                    const indexStraight = isFingerStraight(l, 8, 6, 5);
+                    const middleStraight = isFingerStraight(l, 12, 10, 9);
+                    const pinkyStraight = isFingerStraight(l, 20, 18, 17);
+                    return fuzzyMatch([ringThumb, indexStraight, middleStraight, pinkyStraight], 0.8);
+                }
+                case 'sacral': {
+                    // Pinky tip to thumb tip, other fingers straight
+                    const pinkyThumb = normDist(l[20], l[4], ref) < DIST_TOL;
+                    const indexStraight = isFingerStraight(l, 8, 6, 5);
+                    const middleStraight = isFingerStraight(l, 12, 10, 9);
+                    const ringStraight = isFingerStraight(l, 16, 14, 13);
+                    return fuzzyMatch([pinkyThumb, indexStraight, middleStraight, ringStraight], 0.8);
+                }
+                case 'solar plexus': {
+                    // Ring tip to thumb base, other fingers straight
+                    const ringThumbBase = normDist(l[16], l[2], ref) < DIST_TOL;
+                    const indexStraight = isFingerStraight(l, 8, 6, 5);
+                    const middleStraight = isFingerStraight(l, 12, 10, 9);
+                    const pinkyStraight = isFingerStraight(l, 20, 18, 17);
+                    return fuzzyMatch([ringThumbBase, indexStraight, middleStraight, pinkyStraight], 0.8);
+                }
+                case 'throat': {
+                    // Middle tip to thumb tip, other fingers straight
+                    const middleThumb = normDist(l[12], l[4], ref) < DIST_TOL;
+                    const indexStraight = isFingerStraight(l, 8, 6, 5);
+                    const ringStraight = isFingerStraight(l, 16, 14, 13);
+                    const pinkyStraight = isFingerStraight(l, 20, 18, 17);
+                    return fuzzyMatch([middleThumb, indexStraight, ringStraight, pinkyStraight], 0.8);
+                }
+                case 'crown': {
+                    // Index tip to thumb tip, other fingers straight
+                    const indexThumb = normDist(l[8], l[4], ref) < DIST_TOL;
+                    const middleStraight = isFingerStraight(l, 12, 10, 9);
+                    const ringStraight = isFingerStraight(l, 16, 14, 13);
+                    const pinkyStraight = isFingerStraight(l, 20, 18, 17);
+                    return fuzzyMatch([indexThumb, middleStraight, ringStraight, pinkyStraight], 0.8);
+                }
                 default:
                     return false;
             }
