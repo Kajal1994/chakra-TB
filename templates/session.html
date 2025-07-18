@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Your Chakras | Inner Universe</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,700|Lato:400,700|Open+Sans:400,700&display=swap" rel="stylesheet">
+    <style>
+        body, html { height: 100%; margin: 0; padding: 0; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; background: #181a20; }
+        .chakra-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: url('/static/img/img2.webp') no-repeat center center fixed; background-size: cover; z-index: 0; filter: brightness(0.85) blur(1.5px); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(24,26,32,0.55); z-index: 1; }
+        .content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; }
+        .session-header { color: #fff; font-size: 2.2rem; font-weight: 700; margin-top: 2.2rem; margin-bottom: 0.7rem; text-shadow: 0 2px 16px #000; letter-spacing: 0.5px; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; }
+        .step-indicator { color: #fff; font-size: 1.1rem; margin-bottom: 1.5rem; text-shadow: 0 1px 8px #000; }
+        .chakra-selector { display: flex; flex-direction: column; align-items: center; margin-bottom: 2rem; }
+        .chakra-list { display: flex; flex-direction: column; gap: 0.7rem; }
+        .chakra-item { display: flex; align-items: center; gap: 1rem; padding: 0.7rem 1.5rem; border-radius: 16px; cursor: pointer; background: rgba(255,255,255,0.07); border: 2px solid transparent; transition: background 0.2s, border 0.2s; min-width: 220px; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; box-shadow: 0 2px 12px #0001; }
+        .chakra-item.selected, .chakra-item:focus { background: rgba(255,255,255,0.16); border: 2px solid #fff; }
+        .chakra-symbol { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        .chakra-name { color: #fff; font-size: 1.1rem; font-weight: 500; text-shadow: 0 1px 8px #000; }
+        .chakra-color-root { background: #b71c1c; } .chakra-color-sacral { background: #e65100; } .chakra-color-plexus { background: #f9a825; } .chakra-color-heart { background: #388e3c; } .chakra-color-throat { background: #1565c0; } .chakra-color-third { background: #6a1b9a; } .chakra-color-crown { background: #ad1457; }
+        .step-panel { background: rgba(30, 30, 60, 0.82); border-radius: 22px; box-shadow: 0 8px 32px rgba(123,47,242,0.13); padding: 1.7rem 2.2rem; margin-bottom: 2rem; min-width: 520px; max-width: 600px; display: flex; flex-direction: column; align-items: center; }
+        .step-btns { display: flex; gap: 1.5rem; margin: 1.2rem 0; justify-content: center; }
+        .step-btn { padding: 0.7rem 2.2rem; font-size: 1.1rem; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; background: #43a047; color: #fff; transition: background 0.2s, color 0.2s, border 0.2s; box-shadow: 0 2px 12px #0002; }
+        .step-btn.primary { background: #43a047; color: #fff; border: 2px solid #43a047; }
+        .step-btn.secondary { background: transparent; color: #43a047; border: 2px solid #43a047; }
+        .step-btn.primary:hover { background: #388e3c; }
+        .step-btn.secondary:hover { background: #43a047; color: #fff; }
+        .demo-gesture { display: flex; flex-direction: column; align-items: center; margin-bottom: 1.2rem; }
+        .demo-anim { width: 250px; height: 250px; margin-bottom: 1rem; background: rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 2px 16px #0002; }
+        .practice-area { position: relative; width: 480px; height: 360px; margin-bottom: 1.2rem; }
+        #practice-cam { width: 480px; height: 360px; border-radius: 18px; background: #222; }
+        .hand-outline { position: absolute; right: 10px; bottom: 10px; width: 80px; opacity: 0.5; }
+        .feedback { color: #fff; font-size: 1.2rem; margin-top: 1.2rem; text-shadow: 0 1px 8px #000; min-height: 2.2em; text-align: center; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; }
+        .glow { box-shadow: 0 0 32px 8px #fff, 0 0 80px 32px #fff3; }
+        .back-btn { margin-top: 1.5rem; background: none; color: #fff; border: 2px solid #fff; border-radius: 10px; padding: 0.5rem 1.5rem; font-size: 1rem; cursor: pointer; transition: background 0.2s, color 0.2s; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; }
+        .back-btn:hover { background: #fff; color: #43a047; }
+        .mood-helper { color: #bdbdbd; font-size: 0.98rem; margin-top: 0.3rem; text-align: center; font-family: 'Inter', 'Lato', 'Open Sans', Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="chakra-bg"></div>
+    <div class="overlay"></div>
+    <div class="content">
+        <div class="session-header">Explore Your Chakras</div>
+        <div class="step-indicator" id="step-indicator">Step 1 of 3</div>
+        <div class="step-panel" id="step-panel">
+            <!-- Step content will be injected here -->
+        </div>
+        <button class="back-btn" id="back-btn" style="display:none;">&#8592; Choose another chakra</button>
+    </div>
+    <script>
+    // Chakra data
+    const chakras = [
+        { name: 'Root', color: 'chakra-color-root', symbol: '\u25CF', demo: 'Root: ring finger tip touching thumb tip', feedback: 'grounding & stability.' },
+        { name: 'Sacral', color: 'chakra-color-sacral', symbol: '\u25CF', demo: 'Sacral: little finger tip touching thumb tip', feedback: 'creativity & pleasure.' },
+        { name: 'Solar Plexus', color: 'chakra-color-plexus', symbol: '\u25CF', demo: 'Solar Plexus: ring finger touching base of thumb', feedback: 'center of confidence.' },
+        { name: 'Heart', color: 'chakra-color-heart', symbol: '\u25CF', demo: 'Heart: both palms pressed together', feedback: 'love & compassion.' },
+        { name: 'Throat', color: 'chakra-color-throat', symbol: '\u25CF', demo: 'Throat: middle finger tip touching thumb tip', feedback: 'communication & truth.' },
+        { name: 'Third Eye', color: 'chakra-color-third', symbol: '\u25CF', demo: 'Third Eye: fingertips touching in dome shape', feedback: 'intuition & insight.' },
+        { name: 'Crown', color: 'chakra-color-crown', symbol: '\u25CF', demo: 'Crown: index finger tip touching thumb tip', feedback: 'spiritual connection.' }
+    ];
+    let selectedChakra = null;
+    let step = 1;
+    let practiceActive = false;
+
+    const stepPanel = document.getElementById('step-panel');
+    const stepIndicator = document.getElementById('step-indicator');
+    const backBtn = document.getElementById('back-btn');
+
+    // Mood data and mapping
+    const moods = [
+        { name: 'Calm', chakra: 'Root', desired: 'centered and peaceful' },
+        { name: 'Anxious', chakra: 'Root', desired: 'grounded and secure' },
+        { name: 'Tired', chakra: 'Solar Plexus', desired: 'energized and confident' },
+        { name: 'Distracted', chakra: 'Third Eye', desired: 'focused and clear' },
+        { name: 'Unmotivated', chakra: 'Sacral', desired: 'creative and inspired' },
+        { name: 'Stressed', chakra: 'Throat', desired: 'calm and expressive' },
+        { name: 'Energetic', chakra: 'Crown', desired: 'spiritually connected' },
+        { name: 'Focused', chakra: 'Third Eye', desired: 'insightful and attentive' },
+        { name: 'Choose Chakra Manually', chakra: null, desired: null, manual: true }
+    ];
+    let selectedMood = null;
+    let moodStep = 1; // 1: mood select, 2: recommend, 3: chakra list/session
+
+    function renderMoodSelector() {
+        moodStep = 1;
+        selectedMood = null;
+        stepIndicator.textContent = '';
+        backBtn.style.display = 'none';
+        stepPanel.innerHTML = `
+            <div class="chakra-selector">
+                <div class="feedback" style="margin-bottom:1.2rem;font-size:1.3rem;">How are you feeling right now?<br><span style='font-size:1.1rem;'>Please select your current mood:</span></div>
+                <div class="chakra-list" id="mood-list" style="gap:1.1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));max-width:520px;">
+                    ${moods.map((m, i) => `
+                        <div class="chakra-item" tabindex="0" data-idx="${i}" style="min-width:unset;justify-content:center;text-align:center;font-size:1.1rem;box-shadow:0 2px 12px #0001;">
+                            <span class="chakra-name">${m.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="mood-helper" style="margin-top:1.2rem;">
+                    If you already know which chakra you want to practice, select <b>"Choose Chakra Manually"</b> below.
+                </div>
+            </div>
+        `;
+        document.querySelectorAll('.chakra-item').forEach(item => {
+            item.onclick = () => { selectedMood = parseInt(item.dataset.idx); handleMoodSelection(); };
+            item.onkeydown = (e) => { if (e.key === 'Enter') { selectedMood = parseInt(item.dataset.idx); handleMoodSelection(); } };
+        });
+    }
+
+    function handleMoodSelection() {
+        const mood = moods[selectedMood];
+        if (mood.chakra) {
+            renderMoodRecommendation(mood);
+        } else {
+            renderChakraSelector();
+        }
+    }
+
+    function renderMoodRecommendation(mood) {
+        moodStep = 2;
+        stepIndicator.textContent = '';
+        backBtn.style.display = 'none';
+        // Find chakra index
+        const chakraIdx = chakras.findIndex(c => c.name.toLowerCase() === mood.chakra.toLowerCase());
+        const chakra = chakras[chakraIdx];
+        stepPanel.innerHTML = `
+            <div class="chakra-selector">
+                <div style="margin-bottom:0.7rem;width:100%;display:flex;justify-content:center;">
+                    <span style="background:linear-gradient(90deg,#7b2ff2,#43a047);color:#fff;padding:0.5rem 1.3rem;border-radius:18px;font-size:1.1rem;font-weight:600;box-shadow:0 2px 12px #0002;letter-spacing:0.5px;">Selected Mood: <span style='color:#ffd700;'>${mood.name}</span></span>
+                </div>
+                <div class="feedback" style="margin-bottom:1.2rem;font-size:1.2rem;">Based on your mood, we recommend practicing the <span style="font-weight:bold;color:#ffd700;">${chakra.name} Chakra</span> to help you feel more <span style="color:#7bffb3;">${mood.desired}</span>.</div>
+                <div style="display:flex;gap:1.5rem;margin-top:1.5rem;justify-content:center;">
+                    <button class="step-btn primary" id="start-recommended-btn">Proceed to Practice Options</button>
+                    <button class="step-btn secondary" id="back-to-mood-btn" style="background:#fff;color:#43a047;">Back to Mood Selection</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('start-recommended-btn').onclick = () => {
+            selectedChakra = chakraIdx;
+            renderDemoOrPractice();
+        };
+        document.getElementById('back-to-mood-btn').onclick = () => {
+            renderMoodSelector();
+        };
+    }
+
+    // Update renderChakraSelector to allow back navigation to mood selection
+    function renderChakraSelector() {
+        moodStep = 3;
+        stepIndicator.textContent = '';
+        backBtn.style.display = 'inline-block';
+        stepPanel.innerHTML = `
+            <div class="chakra-selector">
+                <div class="feedback" style="margin-bottom:1rem;">Select the chakra you want to practice:</div>
+                <div class="chakra-list" id="chakra-list">
+                    ${chakras.map((c, i) => `
+                        <div class="chakra-item" tabindex="0" data-idx="${i}">
+                            <span class="chakra-symbol ${c.color}">${c.symbol}</span>
+                            <span class="chakra-name">${c.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        document.querySelectorAll('.chakra-item').forEach(item => {
+            item.onclick = () => { selectedChakra = parseInt(item.dataset.idx); renderDemoOrPractice(); };
+            item.onkeydown = (e) => { if (e.key === 'Enter') { selectedChakra = parseInt(item.dataset.idx); renderDemoOrPractice(); } };
+        });
+    }
+
+    // Update backBtn logic to always go to mood selection
+    backBtn.onclick = () => {
+        stopPracticeCamera();
+        // Reset session header and state
+        const sessionHeader = document.querySelector('.session-header');
+        if (sessionHeader) sessionHeader.textContent = 'Explore Your Chakras';
+        stepIndicator.textContent = '';
+        renderMoodSelector();
+    };
+
+    // --- MediaPipe Hands integration for practice ---
+    let practiceStream = null;
+    let hands = null;
+    let camera = null;
+    let gestureDetected = false;
+    let handPresent = false;
+    let frameCount = 0; // For frame skipping to reduce lag
+    let calibratedHandSize = null;
+    let calibrationInProgress = false;
+    let calibrationFrames = [];
+    const CALIBRATION_FRAME_COUNT = 20;
+
+    function stopPracticeCamera() {
+        if (practiceStream) {
+            practiceStream.getTracks().forEach(track => track.stop());
+            practiceStream = null;
+        }
+        if (camera && camera.stop) camera.stop();
+        camera = null;
+        if (hands && hands.close) hands.close();
+        hands = null;
+        gestureDetected = false;
+        handPresent = false;
+        frameCount = 0;
+        // Clear overlays and feedback if present
+        const canvas = document.getElementById('practice-canvas');
+        if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+        const feedback = document.getElementById('practice-feedback');
+        if (feedback) feedback.textContent = '';
+    }
+
+    function renderCalibrationStep() {
+        calibrationInProgress = true;
+        calibrationFrames = [];
+        stepIndicator.textContent = '';
+        backBtn.style.display = 'inline-block';
+        const c = chakras[selectedChakra];
+        stepPanel.innerHTML = `
+            <div style="width:100%;display:flex;flex-direction:column;align-items:center;">
+                <div class="feedback" id="calibration-feedback" style="margin-bottom:1.2rem;">
+                    Hold your open hand steady in front of the camera so we can calibrate for best gesture detection.<br>
+                    <span style='font-size:1.1rem;'>Keep your hand at a comfortable distance.</span>
+                </div>
+                <div class="practice-area">
+                    <video id="practice-cam" autoplay playsinline muted></video>
+                    <canvas id="practice-canvas" width="480" height="360" style="position:absolute;left:0;top:0;pointer-events:none;"></canvas>
+                </div>
+                <div class="feedback" id="calibration-progress">Waiting for your hand…</div>
+            </div>
+        `;
+        setupCalibrationCameraV2();
+    }
+
+    async function setupCalibrationCameraV2() {
+        stopPracticeCamera();
+        const video = document.getElementById('practice-cam');
+        const canvas = document.getElementById('practice-canvas');
+        const ctx = canvas.getContext('2d');
+        const progress = document.getElementById('calibration-progress');
+        const feedback = document.getElementById('calibration-feedback');
+        calibrationFrames = [];
+        let handDetected = false;
+        let handDetectedTime = null;
+        let noHandTimeout = null;
+        let calibrationTimeout = null;
+        practiceStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 1280, min: 640 },
+                height: { ideal: 720, min: 480 },
+                frameRate: { ideal: 30, max: 30 }
+            } 
+        });
+        video.srcObject = practiceStream;
+        await video.play();
+        hands = new window.Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.3,
+            minTrackingConfidence: 0.3
+        });
+        // No hand warning after 5 seconds
+        noHandTimeout = setTimeout(() => {
+            if (!handDetected) {
+                progress.textContent = 'No hand detected. Please adjust your hand position and try again.';
+            }
+        }, 5000);
+        hands.onResults((results) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let plausibleHand = false;
+            let handSize = null;
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                handSize = getHandSize(landmarks);
+                // Accept a much wider plausible hand size range
+                if (handSize > 0.03 && handSize < 0.8) {
+                    plausibleHand = true;
+                }
+                if (plausibleHand) {
+                    // Draw landmarks for feedback
+                    drawConnectors(ctx, landmarks, window.HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.4)', lineWidth: 2 });
+                    drawLandmarks(ctx, landmarks, { color: 'rgba(0,255,180,0.4)', lineWidth: 2, radius: 3 });
+                    if (!handDetected) {
+                        handDetected = true;
+                        handDetectedTime = Date.now();
+                        progress.textContent = 'Hand detected. Ready to start.' + `<br><span style='font-size:0.98em;color:#bdbdbd;'>Hand size: ${handSize.toFixed(3)}</span>`;
+                        feedback.innerHTML = 'Calibration successful! Proceeding to gesture detection…';
+                        clearTimeout(noHandTimeout);
+                        calibrationTimeout = setTimeout(() => {
+                            window.calibratedHandSize = handSize;
+                            calibrationInProgress = false;
+                            stopPracticeCamera();
+                            renderPractice();
+                        }, 1200);
+                    }
+                } else if (handSize !== null) {
+                    // Hand detected but out of range
+                    progress.innerHTML = 'Hand detected, but too close/far. Move your hand closer or farther from the camera.' + `<br><span style='font-size:0.98em;color:#bdbdbd;'>Hand size: ${handSize.toFixed(3)}</span>`;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                } else {
+                    if (!handDetected) {
+                        progress.textContent = 'Waiting for your hand…';
+                    }
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            } else {
+                if (!handDetected) {
+                    progress.textContent = 'Waiting for your hand…';
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        });
+        camera = new window.Camera(video, {
+            onFrame: async () => {
+                if (hands) {
+                    await hands.send({ image: video });
+                }
+            },
+            width: 480,
+            height: 360
+        });
+        camera.start();
+    }
+
+    function renderDemoOrPractice() {
+        stepIndicator.textContent = '';
+        backBtn.textContent = 'Back to Mood Selection';
+        backBtn.style.display = 'inline-block';
+        const c = chakras[selectedChakra];
+        stepPanel.innerHTML = `
+            <div class="feedback" style="margin-bottom:1.2rem;">If you’re new to this mudra, you can watch a demo first — or jump straight into practice.</div>
+            <div class="step-btns">
+                <button class="step-btn primary" id="start-practice-btn">Start Practice</button>
+            </div>
+            <div style="margin-top:1.2rem;">
+                <a href="#" id="show-demo-link" style="color:#43a047;text-decoration:underline;font-size:1.05rem;">View Gesture Demo (Optional)</a>
+            </div>
+        `;
+        document.getElementById('show-demo-link').onclick = (e) => { e.preventDefault(); renderDemo(); };
+        document.getElementById('start-practice-btn').onclick = renderPractice;
+    }
+
+    function renderDemo() {
+        stepIndicator.textContent = '';
+        backBtn.style.display = 'inline-block';
+        const c = chakras[selectedChakra];
+        // Map chakra names to actual GIF filenames
+        const gifMap = {
+            'root': 'rootchakra-gif.gif',
+            'sacral': 'sacralchakra-gif.gif',
+            'solarplexus': 'solarplexus-gif.gif',
+            'heart': 'heartchakra.jpg',
+            'throat': 'throatchakra-gif.gif',
+            'thirdeye': 'thirdeyechakra.jpg',
+            'crown': 'crown-gif.gif'
+        };
+        const gifName = gifMap[c.name.toLowerCase().replace(/\s/g, '')] || 'rootchakra-gif.gif'; // fallback to root
+        // Mudra info mapping
+        const mudraInfo = {
+            'root': {
+                mudra: 'Prithvi Mudra',
+                chakra: 'Root Chakra (Muladhara)',
+                meaning: 'Grounding, stability, connection to the earth, and inner calm.'
+            },
+            'sacral': {
+                mudra: 'Varun Mudra',
+                chakra: 'Sacral Chakra (Svadhisthana)',
+                meaning: 'Creativity, emotional flow, sensuality, and openness.'
+            },
+            'solarplexus': {
+                mudra: 'Surya Mudra',
+                chakra: 'Solar Plexus Chakra (Manipura)',
+                meaning: 'Confidence, willpower, energy, and personal power.'
+            },
+            'heart': {
+                mudra: 'Anjali Mudra',
+                chakra: 'Heart Chakra (Anahata)',
+                meaning: 'Love, compassion, harmony, and emotional balance.'
+            },
+            'throat': {
+                mudra: 'Akash Mudra',
+                chakra: 'Throat Chakra (Vishuddha)',
+                meaning: 'Communication, self-expression, and truth.'
+            },
+            'thirdeye': {
+                mudra: 'Hakini Mudra',
+                chakra: 'Third Eye Chakra (Ajna)',
+                meaning: 'Intuition, focus, mental clarity, and insight.'
+            },
+            'crown': {
+                mudra: 'Gyan Mudra',
+                chakra: 'Crown Chakra (Sahasrara)',
+                meaning: 'Inner peace, spiritual connection, and enlightenment.'
+            }
+        };
+        const mudraKey = c.name.toLowerCase().replace(/\s/g, '');
+        const info = mudraInfo[mudraKey] || mudraInfo['root'];
+        stepPanel.innerHTML = `
+            <div class="demo-gesture">
+                <div class="demo-anim" id="demo-anim">
+                    <img id="gesture-gif" src="/static/img/${gifName}" alt="${c.name} gesture demo" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" loop autoplay />
+                    <div id="demo-fallback" style="display:none;color:#fff;text-align:center;margin-top:0.5rem;">Demo unavailable — please proceed to practice.</div>
+                </div>
+                <div class="feedback" style="margin-top:0.5rem;">
+                    <div style="font-size:1.15rem;font-weight:600;margin-bottom:0.5rem;">Mudra: <span style="color:#ffd700;">${info.mudra}</span></div>
+                    <div style="font-size:1.08rem;margin-bottom:0.3rem;">Related Chakra: <span style="color:#7bffb3;">${info.chakra}</span></div>
+                    <div style="font-size:1.05rem;">Represents: <span style="color:#fff;">${info.meaning}</span></div>
+                </div>
+                <button class="step-btn primary" id="demo-to-practice-btn" style="margin-top:1.2rem;">Start Practicing</button>
+            </div>
+        `;
+        // GIF fallback logic
+        const gifImg = document.getElementById('gesture-gif');
+        gifImg.onerror = function() {
+            gifImg.style.display = 'none';
+            document.getElementById('demo-fallback').style.display = 'block';
+        };
+        document.getElementById('demo-to-practice-btn').onclick = renderPractice;
+    }
+
+    function renderPractice() {
+        stepIndicator.textContent = '';
+        backBtn.style.display = 'inline-block';
+        const c = chakras[selectedChakra];
+        let moodName = '';
+        if (typeof selectedMood === 'number' && moods[selectedMood]) {
+            if (moods[selectedMood].name === 'Choose Chakra Manually') {
+                const mappedMood = moods.find(m => m.chakra && m.chakra.toLowerCase() === c.name.toLowerCase());
+                moodName = mappedMood ? mappedMood.name : '';
+            } else {
+                moodName = moods[selectedMood].name;
+            }
+        }
+        // Reset session header to default
+        const sessionHeader = document.querySelector('.session-header');
+        if (sessionHeader) {
+            sessionHeader.textContent = `You’re now practicing: ${c.name} Chakra`;
+        }
+        stepPanel.innerHTML = `
+            <div style="width:100%;display:flex;flex-direction:column;align-items:center;">
+                ${moodName ? `<div style="margin-bottom:1.1rem;width:100%;display:flex;justify-content:center;">
+                    <span style="background:linear-gradient(90deg,#7b2ff2,#43a047);color:#fff;padding:0.5rem 1.3rem;border-radius:18px;font-size:1.1rem;font-weight:600;box-shadow:0 2px 12px #0002;letter-spacing:0.5px;">Current Mood: <span style='color:#ffd700;'>${moodName}</span></span>
+                </div>` : ''}
+                <div class="practice-area" style="position:relative;">
+                    <video id="practice-cam" autoplay playsinline muted></video>
+                    <canvas id="practice-canvas" width="480" height="360" style="position:absolute;left:0;top:0;pointer-events:none;"></canvas>
+                </div>
+                <div class="feedback" id="practice-feedback">Waiting for your gesture…</div>
+            </div>
+        `;
+        setupPracticeCameraNew();
+    }
+
+    // --- New Practice Camera Logic ---
+    async function setupPracticeCameraNew() {
+        stopPracticeCamera();
+        const video = document.getElementById('practice-cam');
+        const canvas = document.getElementById('practice-canvas');
+        const ctx = canvas.getContext('2d');
+        const feedback = document.getElementById('practice-feedback');
+        let handDetected = false;
+        let correctGesture = false;
+        let gestureHoldStart = null;
+        let gestureConfirmed = false;
+        let lastFeedback = '';
+        let animationFrameId = null;
+        // Helper: show feedback only if changed
+        function setFeedback(msg) {
+            if (msg !== lastFeedback) {
+                feedback.innerHTML = msg;
+                lastFeedback = msg;
+            }
+        }
+        // Camera setup with error handling
+        try {
+            if (!window.Hands || !window.Camera) {
+                setFeedback('Error: Hand detection libraries not loaded. Please check your internet connection and reload the page.');
+                return;
+            }
+            practiceStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280, min: 640 },
+                    height: { ideal: 720, min: 480 },
+                    frameRate: { ideal: 30, max: 30 }
+                }
+            });
+            video.srcObject = practiceStream;
+            await video.play();
+        } catch (err) {
+            setFeedback('Unable to access camera. Please allow camera access and reload the page.');
+            return;
+        }
+        // Setup MediaPipe Hands
+        hands = new window.Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        hands.setOptions({
+            maxNumHands: (chakras[selectedChakra].name.toLowerCase() === 'heart' || chakras[selectedChakra].name.toLowerCase() === 'third eye') ? 2 : 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        hands.onResults((results) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+                handDetected = false;
+                correctGesture = false;
+                gestureHoldStart = null;
+                setFeedback('No hand detected. Please show your hand to the camera.');
+                return;
+            }
+            handDetected = true;
+            // Draw landmarks (small, unobtrusive)
+            results.multiHandLandmarks.forEach((landmarks) => {
+                drawConnectors(ctx, landmarks, window.HAND_CONNECTIONS, { color: 'rgba(0,255,180,0.25)', lineWidth: 2 });
+                drawLandmarks(ctx, landmarks, { color: 'rgba(0,255,180,0.7)', lineWidth: 1, radius: 2 });
+            });
+            // Gesture detection
+            const gestureOk = detectChakraGesture(results, chakras[selectedChakra].name);
+            if (gestureOk) {
+                if (!gestureHoldStart) gestureHoldStart = Date.now();
+                if (Date.now() - gestureHoldStart > 1000) {
+                    correctGesture = true;
+                    gestureConfirmed = true;
+                    setFeedback(`Correct gesture detected for <b>${chakras[selectedChakra].name} Chakra</b> — you can proceed.`);
+                } else {
+                    setFeedback(`Hold the correct gesture for <b>${chakras[selectedChakra].name} Chakra</b>…`);
+                }
+            } else {
+                correctGesture = false;
+                gestureHoldStart = null;
+                setFeedback(`Incorrect gesture. Adjust your fingers to match the <b>${chakras[selectedChakra].name} Chakra</b> mudra.`);
+            }
+        });
+        // Camera loop
+        camera = new window.Camera(video, {
+            onFrame: async () => {
+                if (hands) {
+                    await hands.send({ image: video });
+                }
+            },
+            width: 480,
+            height: 360
+        });
+        camera.start();
+    }
+
+    // --- Clean, robust gesture detection for each chakra ---
+    function detectChakraGesture(results, chakraName) {
+        // For two-hand gestures
+        if (chakraName.toLowerCase() === 'heart' || chakraName.toLowerCase() === 'third eye') {
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length < 2) return false;
+            const hand1 = results.multiHandLandmarks[0];
+            const hand2 = results.multiHandLandmarks[1];
+            function dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
+            const handSize = (getHandSize(hand1) + getHandSize(hand2)) / 2;
+            if (chakraName.toLowerCase() === 'heart') {
+                // Heart Chakra (Anjali Mudra): Palms and all fingertips pressed together
+                // Reference: heartchakra.jpg
+                const tips = [4,8,12,16,20];
+                // All fingertips close between hands, and palms close
+                const palmsClose = dist(hand1[0], hand2[0]) < handSize * 0.25;
+                const allTipsClose = tips.every(i => dist(hand1[i], hand2[i]) < handSize * 0.18);
+                return palmsClose && allTipsClose;
+            } else if (chakraName.toLowerCase() === 'third eye') {
+                // Third Eye Chakra (Hakini Mudra): Fingertips of both hands touch, dome shape
+                // Reference: thirdeyechakra.jpg
+                // Index, middle, ring, pinky, and thumb tips close
+                const tips = [4,8,12,16,20];
+                return tips.every(i => dist(hand1[i], hand2[i]) < handSize * 0.20);
+            }
+        } else {
+            // Single hand gestures
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return false;
+            const l = results.multiHandLandmarks[0];
+            function dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
+            const handSize = getHandSize(l);
+            switch(chakraName.toLowerCase()) {
+                case 'root':
+                    // Root Chakra (Prithvi Mudra): Tip of ring finger touches tip of thumb, other fingers extended
+                    // Reference: rootchakra-gif.gif
+                    const ringThumb = dist(l[16], l[4]) < handSize * 0.18;
+                    const indexExtended = l[8].y < l[6].y;
+                    const middleExtended = l[12].y < l[10].y;
+                    const pinkyExtended = l[20].y < l[18].y;
+                    return ringThumb && indexExtended && middleExtended && pinkyExtended;
+                case 'sacral':
+                    // Sacral Chakra (Varun Mudra): Tip of little finger touches tip of thumb, other fingers extended
+                    // Reference: sacralchakra-gif.gif
+                    const pinkyThumb = dist(l[20], l[4]) < handSize * 0.18;
+                    return pinkyThumb && l[8].y < l[6].y && l[12].y < l[10].y && l[16].y < l[14].y;
+                case 'solar plexus':
+                    // Solar Plexus Chakra (Surya Mudra): Tip of ring finger touches base of thumb, other fingers extended
+                    // Reference: solarplexus-gif.gif
+                    const ringThumbBase = dist(l[16], l[2]) < handSize * 0.18;
+                    return ringThumbBase && l[8].y < l[6].y && l[12].y < l[10].y && l[20].y < l[18].y;
+                case 'throat':
+                    // Throat Chakra (Akash Mudra): Tip of middle finger touches tip of thumb, other fingers extended
+                    // Reference: throatchakra-gif.gif
+                    const middleThumb = dist(l[12], l[4]) < handSize * 0.18;
+                    return middleThumb && l[8].y < l[6].y && l[16].y < l[14].y && l[20].y < l[18].y;
+                case 'crown':
+                    // Crown Chakra (Gyan Mudra): Tip of index finger touches tip of thumb, other fingers extended
+                    // Reference: crown-gif.gif
+                    const indexThumb = dist(l[8], l[4]) < handSize * 0.18;
+                    return indexThumb && l[12].y < l[10].y && l[16].y < l[14].y && l[20].y < l[18].y;
+                default:
+                    return false;
+            }
+        }
+        return false;
+    }
+    // Helper: estimate hand size (bounding box diagonal)
+    function getHandSize(landmarks) {
+        let minX = 1, minY = 1, maxX = 0, maxY = 0;
+        for (const p of landmarks) {
+            if (p.x < minX) minX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y > maxY) maxY = p.y;
+        }
+        return Math.sqrt((maxX-minX)**2 + (maxY-minY)**2);
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', stopPracticeCamera);
+
+    // Initial render: show welcome page
+    renderMoodSelector();
+    // Load MediaPipe drawing utils as static script tags
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</body>
+</html> 
