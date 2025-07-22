@@ -88,21 +88,28 @@
         selectedMood = null;
         stepIndicator.textContent = '';
         backBtn.style.display = 'none';
+        // Prepare mood grid (7 moods, all same size)
+        const moodButtons = moods.filter(m => !m.manual).map((m, i) => `
+            <div class="chakra-item" tabindex="0" data-idx="${i}" style="min-width:140px;max-width:180px;justify-content:center;text-align:center;font-size:1.1rem;box-shadow:0 2px 12px #0001;">
+                <span class="chakra-name">${m.name}</span>
+            </div>
+        `).join('');
+        // Manual button: same style, centered below
+        const manualIdx = moods.findIndex(m => m.manual);
+        const manualButton = `<div class="chakra-item" tabindex="0" data-idx="${manualIdx}" style="min-width:140px;max-width:180px;margin:0 auto;justify-content:center;text-align:center;font-size:1.1rem;box-shadow:0 2px 12px #0001;"> <span class="chakra-name">Choose Chakra Manually</span></div>`;
         stepPanel.innerHTML = `
-            <div class="chakra-selector">
+            <div class="chakra-selector" style="max-width:400px;margin:0 auto;">
                 <div class="feedback" style="margin-bottom:1.2rem;font-size:1.3rem;">How are you feeling right now?<br><span style='font-size:1.1rem;'>Please select your current mood:</span></div>
-                <div class="chakra-list" id="mood-list" style="gap:1.1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));max-width:520px;">
-                    ${moods.map((m, i) => `
-                        <div class="chakra-item" tabindex="0" data-idx="${i}" style="min-width:unset;justify-content:center;text-align:center;font-size:1.1rem;box-shadow:0 2px 12px #0001;">
-                            <span class="chakra-name">${m.name}</span>
-                        </div>
-                    `).join('')}
+                <div class="chakra-list" id="mood-list" style="gap:1.1rem;display:grid;grid-template-columns:repeat(2,1fr);max-width:380px;margin:0 auto;justify-items:center;">
+                    ${moodButtons}
                 </div>
                 <div class="mood-helper" style="margin-top:1.2rem;">
                     If you already know which chakra you want to practice, select <b>"Choose Chakra Manually"</b> below.
                 </div>
+                <div style="display:flex;justify-content:center;margin-top:1.1rem;">${manualButton}</div>
             </div>
         `;
+        // Add event listeners for all .chakra-item
         document.querySelectorAll('.chakra-item').forEach(item => {
             item.onclick = () => { selectedMood = parseInt(item.dataset.idx); handleMoodSelection(); };
             item.onkeydown = (e) => { if (e.key === 'Enter') { selectedMood = parseInt(item.dataset.idx); handleMoodSelection(); } };
@@ -135,15 +142,19 @@
                     <button class="step-btn primary" id="start-recommended-btn">Proceed to Practice Options</button>
                     <button class="step-btn secondary" id="back-to-mood-btn" style="background:#fff;color:#43a047;">Back to Mood Selection</button>
                 </div>
+                <div style="margin-top:1.2rem;">
+                    <a href="#" id="show-demo-link" style="color:#43a047;text-decoration:underline;font-size:1.05rem;">View Gesture Demo (Optional)</a>
+                </div>
             </div>
         `;
         document.getElementById('start-recommended-btn').onclick = () => {
             selectedChakra = chakraIdx;
-            renderDemoOrPractice();
+            renderPractice();
         };
         document.getElementById('back-to-mood-btn').onclick = () => {
             renderMoodSelector();
         };
+        document.getElementById('show-demo-link').onclick = (e) => { e.preventDefault(); selectedChakra = chakraIdx; renderDemo(); };
     }
 
     // Update renderChakraSelector to allow back navigation to mood selection
@@ -165,8 +176,8 @@
             </div>
         `;
         document.querySelectorAll('.chakra-item').forEach(item => {
-            item.onclick = () => { selectedChakra = parseInt(item.dataset.idx); renderDemoOrPractice(); };
-            item.onkeydown = (e) => { if (e.key === 'Enter') { selectedChakra = parseInt(item.dataset.idx); renderDemoOrPractice(); } };
+            item.onclick = () => { selectedChakra = parseInt(item.dataset.idx); renderPractice(); };
+            item.onkeydown = (e) => { if (e.key === 'Enter') { selectedChakra = parseInt(item.dataset.idx); renderPractice(); } };
         });
     }
 
@@ -324,24 +335,6 @@
             height: 360
         });
         camera.start();
-    }
-
-    function renderDemoOrPractice() {
-        stepIndicator.textContent = '';
-        backBtn.textContent = 'Back to Mood Selection';
-        backBtn.style.display = 'inline-block';
-        const c = chakras[selectedChakra];
-        stepPanel.innerHTML = `
-            <div class="feedback" style="margin-bottom:1.2rem;">If you’re new to this mudra, you can watch a demo first — or jump straight into practice.</div>
-            <div class="step-btns">
-                <button class="step-btn primary" id="start-practice-btn">Start Practice</button>
-            </div>
-            <div style="margin-top:1.2rem;">
-                <a href="#" id="show-demo-link" style="color:#43a047;text-decoration:underline;font-size:1.05rem;">View Gesture Demo (Optional)</a>
-            </div>
-        `;
-        document.getElementById('show-demo-link').onclick = (e) => { e.preventDefault(); renderDemo(); };
-        document.getElementById('start-practice-btn').onclick = renderPractice;
     }
 
     function renderDemo() {
