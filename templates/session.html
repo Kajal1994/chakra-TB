@@ -61,6 +61,39 @@
         { name: 'Third Eye', color: 'chakra-color-third', symbol: '\u25CF', demo: 'Third Eye: fingertips touching in dome shape', feedback: 'intuition & insight.' },
         { name: 'Crown', color: 'chakra-color-crown', symbol: '\u25CF', demo: 'Crown: index finger tip touching thumb tip', feedback: 'spiritual connection.' }
     ];
+    // --- Chakra audio preload ---
+    const chakraAudio = {
+      root: new Audio('/static/audio/root.mp3'),
+      sacral: new Audio('/static/audio/sacral.mp3'),
+      solarplexus: new Audio('/static/audio/solarplexus.mp3'),
+      heart: new Audio('/static/audio/heart.mp3'),
+      throat: new Audio('/static/audio/throat.mp3'),
+      thirdeye: new Audio('/static/audio/thirdeye.mp3'),
+      crown: new Audio('/static/audio/crown.mp3')
+    };
+    Object.values(chakraAudio).forEach(audio => {
+      audio.loop = true;
+      audio.volume = 0.5;
+    });
+    let currentChakraSound = null;
+    function playChakraSound(chakraKey) {
+      if (currentChakraSound && currentChakraSound !== chakraAudio[chakraKey]) {
+        currentChakraSound.pause();
+        currentChakraSound.currentTime = 0;
+      }
+      if (chakraAudio[chakraKey] && currentChakraSound !== chakraAudio[chakraKey]) {
+        chakraAudio[chakraKey].currentTime = 0;
+        chakraAudio[chakraKey].play();
+        currentChakraSound = chakraAudio[chakraKey];
+      }
+    }
+    function stopChakraSound() {
+      if (currentChakraSound) {
+        currentChakraSound.pause();
+        currentChakraSound.currentTime = 0;
+        currentChakraSound = null;
+      }
+    }
     let selectedChakra = null;
     let step = 1;
     let practiceActive = false;
@@ -162,6 +195,16 @@
         moodStep = 3;
         stepIndicator.textContent = '';
         backBtn.style.display = 'inline-block';
+        // Change label and behavior for this screen only
+        backBtn.innerHTML = '&#x2B05; Return to Previous Screen';
+        backBtn.onclick = () => {
+            stopPracticeCamera();
+            // Reset session header and state
+            const sessionHeader = document.querySelector('.session-header');
+            if (sessionHeader) sessionHeader.textContent = 'Explore Your Chakras';
+            stepIndicator.textContent = '';
+            renderMoodSelector();
+        };
         stepPanel.innerHTML = `
             <div class="chakra-selector">
                 <div class="feedback" style="margin-bottom:1rem;">Select the chakra you want to practice:</div>
@@ -181,15 +224,34 @@
         });
     }
 
-    // Update backBtn logic to always go to mood selection
-    backBtn.onclick = () => {
-        stopPracticeCamera();
-        // Reset session header and state
-        const sessionHeader = document.querySelector('.session-header');
-        if (sessionHeader) sessionHeader.textContent = 'Explore Your Chakras';
-        stepIndicator.textContent = '';
-        renderMoodSelector();
-    };
+    function setBackBtnLabelAndBehavior() {
+        // If user came from mood selection (moodStep 1 or 2, or selectedMood is a mood and not manual)
+        if (
+            (typeof selectedMood === 'number' && moods[selectedMood] && moods[selectedMood].name !== 'Choose Chakra Manually') ||
+            moodStep === 1 || moodStep === 2
+        ) {
+            backBtn.innerHTML = '&#x2B05; Back to Mood Selection';
+            backBtn.onclick = () => {
+                stopPracticeCamera();
+                // Reset session header and state
+                const sessionHeader = document.querySelector('.session-header');
+                if (sessionHeader) sessionHeader.textContent = 'Explore Your Chakras';
+                stepIndicator.textContent = '';
+                renderMoodSelector();
+            };
+        } else {
+            // User explicitly chose a chakra
+            backBtn.innerHTML = '&#x2B05; Choose another chakra';
+            backBtn.onclick = () => {
+                stopPracticeCamera();
+                // Reset session header and state
+                const sessionHeader = document.querySelector('.session-header');
+                if (sessionHeader) sessionHeader.textContent = 'Explore Your Chakras';
+                stepIndicator.textContent = '';
+                renderChakraSelector();
+            };
+        }
+    }
 
     // --- MediaPipe Hands integration for practice ---
     let practiceStream = null;
@@ -220,6 +282,7 @@
         if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
         const feedback = document.getElementById('practice-feedback');
         if (feedback) feedback.textContent = '';
+        stopChakraSound(); // Stop audio when leaving practice
     }
 
     function renderCalibrationStep() {
@@ -227,6 +290,7 @@
         calibrationFrames = [];
         stepIndicator.textContent = '';
         backBtn.style.display = 'inline-block';
+        setBackBtnLabelAndBehavior();
         const c = chakras[selectedChakra];
         stepPanel.innerHTML = `
             <div style="width:100%;display:flex;flex-direction:column;align-items:center;">
@@ -340,6 +404,7 @@
     function renderDemo() {
         stepIndicator.textContent = '';
         backBtn.style.display = 'inline-block';
+        setBackBtnLabelAndBehavior();
         const c = chakras[selectedChakra];
         // Map chakra names to actual GIF filenames
         const gifMap = {
@@ -418,6 +483,7 @@
     function renderPractice() {
         stepIndicator.textContent = '';
         backBtn.style.display = 'inline-block';
+        setBackBtnLabelAndBehavior();
         const c = chakras[selectedChakra];
         let moodName = '';
         if (typeof selectedMood === 'number' && moods[selectedMood]) {
@@ -509,6 +575,7 @@
                 correctGesture = false;
                 gestureHoldStart = null;
                 setFeedback('No hand detected. Please show your hand to the camera.');
+                stopChakraSound(); // Stop audio if no hand
                 return;
             }
             handDetected = true;
@@ -519,7 +586,9 @@
             });
             // Gesture detection (robust)
             const gestureOk = detectChakraGestureRobust(results, chakras[selectedChakra].name);
+            const chakraKey = chakras[selectedChakra].name.toLowerCase().replace(/\s/g, '');
             if (gestureOk) {
+                playChakraSound(chakraKey);
                 if (!gestureHoldStart) gestureHoldStart = Date.now();
                 if (Date.now() - gestureHoldStart > 1000) {
                     correctGesture = true;
@@ -529,6 +598,7 @@
                     setFeedback(`Hold the correct gesture for <b>${chakras[selectedChakra].name} Chakra</b>…`);
                 }
             } else {
+                stopChakraSound();
                 correctGesture = false;
                 gestureHoldStart = null;
                 setFeedback(`Incorrect gesture. Adjust your fingers to match the <b>${chakras[selectedChakra].name} Chakra</b> mudra.`);
